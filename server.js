@@ -2,8 +2,13 @@ const express = require('express');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
+const Clarifai = require('clarifai');
+const { response } = require('express');
 
-
+//create API Object
+const clarifaiApp = new Clarifai.App({
+    apiKey: '1332d555d77c412fa68876989de7ea02'
+  })
 
 const db = knex({
     client: 'pg',
@@ -25,37 +30,53 @@ app.get('/', (req, res) => {
     res.send(database.users);
 })
 
+app.post('/imageurl', (req, res) => {
+    clarifaiApp.models
+      .predict(Clarifai.FACE_DETECT_MODEL, req.body.input)
+      .then(data => {
+          res.json(data);
+      })
+      .catch(err => {
+          res.status(400).json('unable to work with API')
+      })
+})
+
 app.post('/signin', (req, res) => {
     const {email, password} = req.body;
     const lowerCaseEmail = email.toLowerCase()
 
-    db.select('*').from('login')
-    .where({
-        email: lowerCaseEmail
-    })
-     .then(users => {
-         if(users.length > 0){
-            const isValid = bcrypt.compareSync(password, users[0].password);
-            if (isValid){
-                db.select('*').from('users').where({
-                    email: lowerCaseEmail
-                })
-                .then(data => {
-                    res.json({
-                        signIn: 'success',
-                        user: data[0]
+    if(email && password){
+        db.select('*').from('login')
+        .where({
+            email: lowerCaseEmail
+        })
+         .then(users => {
+             if(users.length > 0){
+                const isValid = bcrypt.compareSync(password, users[0].password);
+                if (isValid){
+                    db.select('*').from('users').where({
+                        email: lowerCaseEmail
                     })
-                })
-                .catch(err => {
-                    res.status(400).json('error logging in')
-                })
-            }else{
-                res.status(404).json('invalid credentials')
-            }
-         }else{
-             res.status(404).json('user not found')
-         }
-     })
+                    .then(data => {
+                        res.json({
+                            signInMessage: 'success',
+                            user: data[0]
+                        })
+                    })
+                    .catch(err => {
+                        res.status(400).json('error logging in')
+                    })
+                }else{
+                    res.status(404).json('username or password incorrect')
+                }
+             }else{
+                 res.status(404).json('username or password incorrect')
+             }
+         })
+    }else{
+        res.status(400).json('incorrect form submission')
+    }
+
 })
 
 app.post('/register', (req, res) => {
@@ -104,7 +125,7 @@ app.post('/register', (req, res) => {
             res.status(400).json('error registering user');
         })
     }else{//IF ONE OR TWO INPUT FIELDS ARE EMPTY
-        res.status(400).json('fields are empty')
+        res.status(400).json('incorrect from submission')
     }
     
 })
@@ -142,7 +163,7 @@ app.put('/image', (req , res) => {
 })
 
 
-
+// const PORT = process.env.PORT
 app.listen(3000, () => {
-    console.log('listening on port 3000')
+    console.log(`listening on port 3000`)
 })
