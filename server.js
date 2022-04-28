@@ -74,7 +74,7 @@ app.post('/signin', (req, res) => {
              }
          })
          .catch(err => {
-             res.send('database error')
+             res.json('database error')
          })
     }else{
         res.status(400).json('incorrect form submission')
