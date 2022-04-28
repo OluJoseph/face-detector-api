@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
 const Clarifai = require('clarifai');
-const { response } = require('express');
+// const { response } = require('express');
 
 //create API Object
 const clarifaiApp = new Clarifai.App({
@@ -13,11 +13,10 @@ const clarifaiApp = new Clarifai.App({
 const db = knex({
     client: 'pg',
     connection: {
-      host : '127.0.0.1',
-      port : 5432,
-      user : 'postgres',
-      password : 'Oluwatobiloba1',
-      database : 'smart-brain'
+      connectionString : process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
     }
 })
 
@@ -74,7 +73,7 @@ app.post('/signin', (req, res) => {
              }
          })
          .catch(err => {
-             console.log('errrrr', err)
+             res.status(404).json('error loggin in')
          })
     }else{
         res.status(400).json('incorrect form submission')
